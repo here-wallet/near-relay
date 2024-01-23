@@ -14,6 +14,7 @@ from py_near.models import DelegateActionModel
 import yaml
 from py_near_primitives import SignedDelegateAction
 from pydantic import BaseModel
+from starlette.middleware.cors import CORSMiddleware
 
 logger.add(
     "logs/replay_info.log",
@@ -91,6 +92,14 @@ async def relay_handler(data: RelayInModel):
         logger.exception(e)
         raise HTTPException(status_code=400, detail=f"{e}")
 
+
+rpc_app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 if __name__ == "__main__":
     uvicorn.run(rpc_app, host="0.0.0.0", port=7001)
