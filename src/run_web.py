@@ -35,7 +35,6 @@ class RelayActionInModel(BaseModel):
     signature: str
     transaction: str
 
-    @property
     def __str__(self):
         return f"{self.signature}.{self.transaction}"
 
@@ -46,13 +45,17 @@ class RelayInModel(BaseModel):
     authorisation: str
 
 
-@rpc_app.post("/execute")
+class RelayOutModel(BaseModel):
+    hash: str
+
+
+@rpc_app.post("/execute", response_model=RelayOutModel)
 async def relay_handler(data: RelayInModel):
     sign = sha256()
     sign.update(data.sender_id.encode("utf8"))
     for a in data.actions:
         sign.update(str(a).encode("utf8"))
-    sign.update(CONFIG["auth_key"])
+    sign.update(CONFIG["auth_key"].encode("utf8"))
     if sign.hexdigest() != data.authorisation:
         logger.info(
             f"Authorisation failed {data.sender_id}: {sign.hexdigest()} != {data.authorisation}"
@@ -68,6 +71,7 @@ async def relay_handler(data: RelayInModel):
         transaction = action.transaction
         delegate_action = base64.b64decode(transaction)
         delegate_action = DelegateActionModel.from_bytes(delegate_action[4:])
+        delegate_action.public_key = delegate_action.public_key.split(":")[1]
 
         signed_da = SignedDelegateAction(
             delegate_action=delegate_action.near_delegate_action,
