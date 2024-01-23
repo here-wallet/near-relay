@@ -1,0 +1,9 @@
+
+replay_account:
+  rpc_addr: "https://rpc.near.org"
+  account_id: "bob.near"
+  private_key:
+    - "ed25519:...."
+    - "ed25519:...."
+
+auth_key: "notsecret"

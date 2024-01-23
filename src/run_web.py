@@ -28,7 +28,7 @@ with open("config.yml", "r") as f:
     CONFIG = yaml.safe_load(f)
 
 rpc_app = FastAPI()
-_relay_nc = Account(rpc_addr="https://rpc.mainnet.near.org", **CONFIG["replay_account"])
+_relay_nc = Account(**CONFIG["replay_account"])
 
 
 class RelayActionInModel(BaseModel):
