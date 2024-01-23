@@ -1,9 +1,13 @@
-FROM tiangolo/uvicorn-gunicorn-fastapi:python3.8
-WORKDIR /workdir
-COPY . .
+FROM tiangolo/uvicorn-gunicorn-fastapi:python3.11
 
-RUN pip install --upgrade pip
+RUN apt update
+
+WORKDIR /workdir
+
+COPY src/ ./src/
+COPY config.yml ./
+COPY requirements.txt  ./
+
 RUN pip install -r requirements.txt
 
-
-#CMD ["python", "src/run_web.py"]
+CMD ["python", "src/run_web.py"]

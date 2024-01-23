@@ -48,9 +48,6 @@ class RelayInModel(BaseModel):
 
 @rpc_app.post("/execute")
 async def relay_handler(data: RelayInModel):
-    """
-    This route handles internal RPC requests.
-    """
     sign = sha256()
     sign.update(data.sender_id.encode("utf8"))
     for a in data.actions:
