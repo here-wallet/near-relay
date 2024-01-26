@@ -6,7 +6,10 @@ WORKDIR /workdir
 
 COPY src/ ./src/
 COPY requirements.txt  ./
+COPY run.sh .
 
 RUN pip install -r requirements.txt
 
-CMD ["python", "src/run_web.py"]
+ENTRYPOINT ["./run.sh"]
+
+CMD []

@@ -29,7 +29,7 @@ logger.add(
 with open("config.yml", "r") as f:
     CONFIG = yaml.safe_load(f)
 
-rpc_app = FastAPI(title="NEAR Protocol relay service", version="0.1.1")
+app = FastAPI(title="NEAR Protocol relay service", version="0.1.1")
 _relay_nc = Account(**CONFIG["replay_account"])
 
 
@@ -51,7 +51,7 @@ class RelayOutModel(BaseModel):
     hash: str
 
 
-@rpc_app.post("/execute", response_model=RelayOutModel)
+@app.post("/execute", response_model=RelayOutModel)
 async def relay_handler(data: RelayInModel):
     sign = sha256()
     sign.update(data.sender_id.encode("utf8"))
@@ -98,7 +98,7 @@ async def relay_handler(data: RelayInModel):
         raise HTTPException(status_code=400, detail=f"{e}")
 
 
-rpc_app.add_middleware(
+app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_credentials=True,
@@ -107,4 +107,4 @@ rpc_app.add_middleware(
 )
 
 if __name__ == "__main__":
-    uvicorn.run(rpc_app, host="0.0.0.0", port=7001, timeout_keep_alive=60)
+    uvicorn.run(app, host="0.0.0.0", port=7001, timeout_keep_alive=60)
