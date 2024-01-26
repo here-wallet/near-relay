@@ -29,7 +29,7 @@ logger.add(
 with open("config.yml", "r") as f:
     CONFIG = yaml.safe_load(f)
 
-rpc_app = FastAPI(title="NEAR Protocol relay service", version="0.1.0")
+rpc_app = FastAPI(title="NEAR Protocol relay service", version="0.1.1")
 _relay_nc = Account(**CONFIG["replay_account"])
 
 
@@ -107,4 +107,4 @@ rpc_app.add_middleware(
 )
 
 if __name__ == "__main__":
-    uvicorn.run(rpc_app, host="0.0.0.0", port=7001)
+    uvicorn.run(rpc_app, host="0.0.0.0", port=7001, timeout_keep_alive=60)
