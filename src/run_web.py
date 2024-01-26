@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import base64
 import json
+import time
 from hashlib import sha256
 from typing import List
 
@@ -81,10 +82,14 @@ async def relay_handler(data: RelayInModel):
         call_actions.append(signed_da)
 
     try:
+        ts = time.time()
+        logger.info(f"Delegate action by {data.sender_id} submitted")
         tr = await _relay_nc.sign_and_submit_tx(
             data.sender_id, call_actions, nowait=False
         )
-        logger.info(f"Delegate action {tr.transaction.hash} submitted")
+        logger.info(
+            f"Delegate action {tr.transaction.hash} by {data.sender_id} executed ({time.time() - ts:.2f}s)"
+        )
         return {"hash": tr.transaction.hash}
     except NotEnoughBalance:
         raise HTTPException(status_code=400, detail="Not enough balance")
