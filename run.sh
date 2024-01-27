@@ -14,4 +14,4 @@ for arg in "$@"; do
 done
 
 # Execute the command with additional arguments from command line
-exec "${CMD_ARGS[@]}" "$@"
+exec "${CMD_ARGS[@]}"
