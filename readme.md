@@ -20,6 +20,10 @@ auth_key: "notsecret"
 
 ```bash
 docker run -d -v ./config.yml:/workdir/config.yml -p 7001:7001 neafiol2/near-relay:latest
+
+
+docker run -d -v ./config.yml:/workdir/config.yml  -v /etc/letsencrypt/live/relay.herewallet.app:/ssl/certs -p 7001:7001 neafiol2/near-relay:latest --ssl
+
 ```
 
 3. Create transaction and sign with `auth_key`

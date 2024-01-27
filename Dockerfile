@@ -6,10 +6,11 @@ WORKDIR /workdir
 
 COPY src/ ./src/
 COPY requirements.txt  ./
-COPY run.sh .
+COPY run.sh ./
+RUN chmod +x run.sh
 
 RUN pip install -r requirements.txt
 
-ENTRYPOINT ["./run.sh"]
+ENTRYPOINT ["bash", "./run.sh"]
 
 CMD []
