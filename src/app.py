@@ -82,33 +82,29 @@ async def relay_handler(data: RelayInModel):
             signature=base58.b58decode(signature),
         )
         call_actions.append(signed_da)
-
-    try:
-        ts = time.time()
-        logger.info(f"Delegate action by {data.sender_id} submitted")
-        tr_hash = await _relay_nc.sign_and_submit_tx(
-            data.sender_id, call_actions, nowait=True
-        )
-        for _ in range(5):
-            await asyncio.sleep(10)
-            try:
-                await _relay_nc.provider.get_tx(tr_hash, data.sender_id)
-                logger.info(
-                    f"Delegate action {tr_hash} by {data.sender_id} executed ({time.time() - ts:.2f}s)"
-                )
-                return {"hash": tr_hash}
-            except Exception:
-                await asyncio.sleep(5)
-        logger.error(f"Delegate action not executed, repeated: {data.sender_id}")
-        tr_hash = await _relay_nc.sign_and_submit_tx(
-            data.sender_id, call_actions, nowait=True
-        )
-        return {"hash": tr_hash}
-    except NotEnoughBalance:
-        raise HTTPException(status_code=400, detail="Not enough balance")
-    except Exception as e:
-        logger.exception(e)
-        raise HTTPException(status_code=400, detail=f"{e}")
+    for _ in range(10):
+        try:
+            ts = time.time()
+            logger.info(f"Delegate action by {data.sender_id} submitted")
+            tr_hash = await _relay_nc.sign_and_submit_tx(
+                data.sender_id, call_actions, nowait=True
+            )
+            for _ in range(7):
+                await asyncio.sleep(7)
+                try:
+                    await _relay_nc.provider.get_tx(tr_hash, data.sender_id)
+                    logger.info(
+                        f"Delegate action {tr_hash} by {data.sender_id} executed ({time.time() - ts:.2f}s): {tr_hash}"
+                    )
+                    return {"hash": tr_hash}
+                except Exception:
+                    await asyncio.sleep(5)
+            logger.error(f"Delegate action not executed, repeated: {data.sender_id}")
+        except NotEnoughBalance:
+            raise HTTPException(status_code=400, detail="Not enough balance")
+        except Exception as e:
+            logger.exception(e)
+            raise HTTPException(status_code=400, detail=f"{e}")
 
 
 app.add_middleware(
