@@ -99,6 +99,7 @@ async def relay_handler(data: RelayInModel):
                 return {"hash": tr_hash}
             except Exception:
                 await asyncio.sleep(5)
+        logger.error(f"Delegate action not executed, repeated: {data.sender_id}")
         tr_hash = await _relay_nc.sign_and_submit_tx(
             data.sender_id, call_actions, nowait=True
         )
