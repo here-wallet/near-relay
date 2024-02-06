@@ -4,3 +4,4 @@ __pycache__
 logs
 config.yml
 test.sh
+ssl

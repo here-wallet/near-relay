@@ -85,7 +85,7 @@ async def relay_handler(data: RelayInModel):
         ts = time.time()
         logger.info(f"Delegate action by {data.sender_id} submitted")
         tr = await _relay_nc.sign_and_submit_tx(
-            data.sender_id, call_actions, nowait=False
+            data.sender_id, call_actions, nowait=True
         )
         logger.info(
             f"Delegate action {tr.transaction.hash} by {data.sender_id} executed ({time.time() - ts:.2f}s)"
