@@ -89,8 +89,18 @@ async def relay_handler(data: RelayInModel):
         tr_hash = await _relay_nc.sign_and_submit_tx(
             data.sender_id, call_actions, nowait=True
         )
-        logger.info(
-            f"Delegate action {tr_hash} by {data.sender_id} executed ({time.time() - ts:.2f}s)"
+        for _ in range(5):
+            await asyncio.sleep(10)
+            try:
+                await _relay_nc.provider.get_tx(tr_hash, data.sender_id)
+                logger.info(
+                    f"Delegate action {tr_hash} by {data.sender_id} executed ({time.time() - ts:.2f}s)"
+                )
+                return {"hash": tr_hash}
+            except Exception:
+                await asyncio.sleep(5)
+        tr_hash = await _relay_nc.sign_and_submit_tx(
+            data.sender_id, call_actions, nowait=True
         )
         return {"hash": tr_hash}
     except NotEnoughBalance:
