@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import asyncio
 import base64
 import json
 import time
@@ -6,6 +7,7 @@ from hashlib import sha256
 from typing import List
 
 import base58
+import ed25519
 import uvicorn
 from fastapi import FastAPI, HTTPException
 from loguru import logger
@@ -84,13 +86,13 @@ async def relay_handler(data: RelayInModel):
     try:
         ts = time.time()
         logger.info(f"Delegate action by {data.sender_id} submitted")
-        tr = await _relay_nc.sign_and_submit_tx(
+        tr_hash = await _relay_nc.sign_and_submit_tx(
             data.sender_id, call_actions, nowait=True
         )
         logger.info(
-            f"Delegate action {tr.transaction.hash} by {data.sender_id} executed ({time.time() - ts:.2f}s)"
+            f"Delegate action {tr_hash} by {data.sender_id} executed ({time.time() - ts:.2f}s)"
         )
-        return {"hash": tr.transaction.hash}
+        return {"hash": tr_hash}
     except NotEnoughBalance:
         raise HTTPException(status_code=400, detail="Not enough balance")
     except Exception as e:
@@ -105,6 +107,22 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+async def check_keys():
+    for pk in CONFIG["replay_account"]["private_key"]:
+        pk_n = pk
+        if isinstance(pk, str):
+            pk = base58.b58decode(pk.replace("ed25519:", ""))
+
+        private_key = ed25519.SigningKey(pk)
+        public_key = base58.b58encode(
+            private_key.get_verifying_key().to_bytes()
+        ).decode("utf-8")
+        k = await _relay_nc.provider.get_access_key(_relay_nc.account_id, public_key)
+        if "error" in k:
+            print(pk_n, "error")
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=7001, timeout_keep_alive=60)
