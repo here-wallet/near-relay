@@ -53,6 +53,29 @@ class RelayOutModel(BaseModel):
     hash: str
 
 
+async def execute(data, call_actions, n=5, tr_hash=None):
+    if not tr_hash:
+        tr_hash = await _relay_nc.sign_and_submit_tx(
+            data.sender_id, call_actions, nowait=True
+        )
+
+    if n == 0:
+        return {"hash": tr_hash}
+    ts = time.time()
+    for _ in range(8):
+        await asyncio.sleep(4)
+        try:
+            await _relay_nc.provider.get_tx(tr_hash, data.sender_id)
+            logger.info(
+                f"Delegate action {tr_hash} by {data.sender_id} executed ({time.time() - ts:.2f}s): {tr_hash}"
+            )
+            return {"hash": tr_hash}
+        except Exception:
+            await asyncio.sleep(5)
+    logger.error(f"Delegate action not executed, repeated: {data.sender_id}")
+    return execute(data, call_actions, n - 1)
+
+
 @app.post("/execute", response_model=RelayOutModel)
 async def relay_handler(data: RelayInModel):
     sign = sha256()
@@ -84,22 +107,12 @@ async def relay_handler(data: RelayInModel):
         call_actions.append(signed_da)
     for _ in range(10):
         try:
-            ts = time.time()
             logger.info(f"Delegate action by {data.sender_id} submitted")
             tr_hash = await _relay_nc.sign_and_submit_tx(
                 data.sender_id, call_actions, nowait=True
             )
-            for _ in range(7):
-                await asyncio.sleep(7)
-                try:
-                    await _relay_nc.provider.get_tx(tr_hash, data.sender_id)
-                    logger.info(
-                        f"Delegate action {tr_hash} by {data.sender_id} executed ({time.time() - ts:.2f}s): {tr_hash}"
-                    )
-                    return {"hash": tr_hash}
-                except Exception:
-                    await asyncio.sleep(5)
-            logger.error(f"Delegate action not executed, repeated: {data.sender_id}")
+            asyncio.create_task(execute(data, call_actions, 2, tr_hash=tr_hash))
+            return {"hash": tr_hash}
         except NotEnoughBalance:
             raise HTTPException(status_code=400, detail="Not enough balance")
         except Exception as e:
@@ -132,4 +145,5 @@ async def check_keys():
 
 
 if __name__ == "__main__":
+    asyncio.run(check_keys())
     uvicorn.run(app, host="0.0.0.0", port=7001, timeout_keep_alive=60)
