@@ -5,4 +5,4 @@ uvicorn==0.20.0
 PyYAML==6.0.1
 PyJWT==2.6.0
 base58==2.1.1
-py-near==1.1.28
+py-near==1.1.31

@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import asyncio
 import base64
-import json
 import time
 from hashlib import sha256
 from typing import List
@@ -9,12 +8,12 @@ from typing import List
 import base58
 import ed25519
 import uvicorn
+import yaml
 from fastapi import FastAPI, HTTPException
 from loguru import logger
 from py_near.account import Account
 from py_near.exceptions.provider import NotEnoughBalance
 from py_near.models import DelegateActionModel
-import yaml
 from py_near_primitives import SignedDelegateAction
 from pydantic import BaseModel
 from starlette.middleware.cors import CORSMiddleware
@@ -128,8 +127,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+keys = []
+
 
 async def check_keys():
+    # acc = Account(**CONFIG["replay_account"])
+    # await acc.send_money("0-relay.hot.tg", 400 * NEAR)
+    # exit(0)
     for pk in CONFIG["replay_account"]["private_key"]:
         pk_n = pk
         if isinstance(pk, str):
@@ -141,9 +145,13 @@ async def check_keys():
         ).decode("utf-8")
         k = await _relay_nc.provider.get_access_key(_relay_nc.account_id, public_key)
         if "error" in k:
-            print(pk_n, "error")
+            continue
+        keys.append(pk_n)
+    for k in keys:
+        print('- "' + k + '"')
 
 
 if __name__ == "__main__":
-    asyncio.run(check_keys())
+    # asyncio.run(check_keys())
+
     uvicorn.run(app, host="0.0.0.0", port=7001, timeout_keep_alive=60)
