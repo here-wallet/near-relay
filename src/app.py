@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import asyncio
 import base64
+import random
 import time
 from hashlib import sha256
 from typing import List
@@ -12,7 +13,6 @@ import yaml
 from fastapi import FastAPI, HTTPException
 from loguru import logger
 from py_near.account import Account
-from py_near.exceptions.provider import NotEnoughBalance
 from py_near.models import DelegateActionModel
 from py_near_primitives import SignedDelegateAction
 from pydantic import BaseModel
@@ -32,6 +32,7 @@ with open("config.yml", "r") as f:
 
 app = FastAPI(title="NEAR Protocol relay service", version="0.1.1")
 _relay_nc = Account(**CONFIG["replay_account"])
+_relay0_nc = Account(**CONFIG["replay0_account"])
 
 
 class RelayActionInModel(BaseModel):
@@ -61,8 +62,8 @@ async def execute(data, call_actions, n=5, tr_hash=None):
     if n == 0:
         return {"hash": tr_hash}
     ts = time.time()
-    for _ in range(8):
-        await asyncio.sleep(4)
+    for _ in range(9):
+        await asyncio.sleep(9)
         try:
             await _relay_nc.provider.get_tx(tr_hash, data.sender_id)
             logger.info(
@@ -72,7 +73,8 @@ async def execute(data, call_actions, n=5, tr_hash=None):
         except Exception:
             await asyncio.sleep(5)
     logger.error(f"Delegate action not executed, repeated: {data.sender_id}")
-    return execute(data, call_actions, n - 1)
+    return {"hash": tr_hash}
+    # return execute(data, call_actions, n - 1)
 
 
 @app.post("/execute", response_model=RelayOutModel)
@@ -104,19 +106,18 @@ async def relay_handler(data: RelayInModel):
             signature=base58.b58decode(signature),
         )
         call_actions.append(signed_da)
-    for _ in range(10):
-        try:
-            logger.info(f"Delegate action by {data.sender_id} submitted")
-            tr_hash = await _relay_nc.sign_and_submit_tx(
-                data.sender_id, call_actions, nowait=True
-            )
-            asyncio.create_task(execute(data, call_actions, 2, tr_hash=tr_hash))
-            return {"hash": tr_hash}
-        except NotEnoughBalance:
-            raise HTTPException(status_code=400, detail="Not enough balance")
-        except Exception as e:
-            logger.exception(e)
-            raise HTTPException(status_code=400, detail=f"{e}")
+
+    logger.info(f"Delegate action by {data.sender_id} submitted")
+    if random.random() < 0.5:
+        tr_hash = await _relay_nc.sign_and_submit_tx(
+            data.sender_id, call_actions, nowait=True
+        )
+    else:
+        tr_hash = await _relay0_nc.sign_and_submit_tx(
+            data.sender_id, call_actions, nowait=True
+        )
+    asyncio.create_task(execute(data, call_actions, 2, tr_hash=tr_hash))
+    return {"hash": tr_hash}
 
 
 app.add_middleware(
@@ -131,10 +132,30 @@ keys = []
 
 
 async def check_keys():
-    # acc = Account(**CONFIG["replay_account"])
+    acc = Account(**CONFIG["here_main_tg"])
     # await acc.send_money("0-relay.hot.tg", 400 * NEAR)
     # exit(0)
-    for pk in CONFIG["replay_account"]["private_key"]:
+    keys = await acc.get_access_key_list(acc.account_id)
+    keys = [k.public_key for k in keys]
+
+    # public_keys = []
+    # for pk in CONFIG["here_main_tg"]["private_key"]:
+    #     pk_n = pk
+    #     if isinstance(pk, str):
+    #         pk = base58.b58decode(pk.replace("ed25519:", ""))
+    #
+    #     private_key = ed25519.SigningKey(pk)
+    #     public_key = base58.b58encode(
+    #         private_key.get_verifying_key().to_bytes()
+    #     ).decode("utf-8")
+    #     public_keys.append(public_key)
+    # for k in keys:
+    #     if k.split(":")[1] not in public_keys:
+    #         r = await acc.delete_public_key(k)
+    #         print(r)
+    # return
+    keys = []
+    for pk in CONFIG["here_main_tg"]["private_key"]:
         pk_n = pk
         if isinstance(pk, str):
             pk = base58.b58decode(pk.replace("ed25519:", ""))
@@ -152,6 +173,4 @@ async def check_keys():
 
 
 if __name__ == "__main__":
-    # asyncio.run(check_keys())
-
     uvicorn.run(app, host="0.0.0.0", port=7001, timeout_keep_alive=60)
