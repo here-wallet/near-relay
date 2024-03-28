@@ -17,6 +17,8 @@ RUN chmod +x run.sh
 
 RUN pip install -r requirements.txt
 
-ENTRYPOINT ["bash", "./run.sh"]
+#ENTRYPOINT ["bash", "./run.sh"]
 
-CMD []
+CMD ["python3", "src/app.py"]
+
+
