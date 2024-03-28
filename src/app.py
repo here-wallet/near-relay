@@ -116,7 +116,6 @@ async def relay_handler(data: RelayInModel):
         tr_hash = await _relay0_nc.sign_and_submit_tx(
             data.sender_id, call_actions, nowait=True
         )
-    asyncio.create_task(execute(data, call_actions, 2, tr_hash=tr_hash))
     return {"hash": tr_hash}
 
 
